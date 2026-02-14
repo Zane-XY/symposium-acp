@@ -8,7 +8,7 @@ use futures::{
     future::{BoxFuture, Either},
 };
 use futures_concurrency::future::TryJoin;
-use fxhash::FxHashMap;
+use rustc_hash::FxHashMap;
 
 /// Tracks which tools are enabled.
 ///
@@ -48,7 +48,7 @@ use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 
 use super::{McpConnectionTo, McpTool};
 use crate::{
-    ByteStreams, DynConnectTo, ConnectTo,
+    ByteStreams, ConnectTo, DynConnectTo,
     jsonrpc::run::{ChainRun, NullRun, RunWithConnectionTo},
     mcp_server::{
         McpServer, McpServerConnect,
@@ -350,7 +350,10 @@ impl<'scope, Counterpart: Role> McpServerConnect<Counterpart> for McpServerBuilt
         self.name.clone()
     }
 
-    fn connect(&self, mcp_connection: McpConnectionTo<Counterpart>) -> DynConnectTo<role::mcp::Client> {
+    fn connect(
+        &self,
+        mcp_connection: McpConnectionTo<Counterpart>,
+    ) -> DynConnectTo<role::mcp::Client> {
         DynConnectTo::new(McpServerConnection {
             data: self.data.clone(),
             mcp_connection,
@@ -365,7 +368,10 @@ pub(crate) struct McpServerConnection<Counterpart: Role> {
 }
 
 impl<Counterpart: Role> ConnectTo<role::mcp::Client> for McpServerConnection<Counterpart> {
-    async fn connect_to(self, client: impl ConnectTo<role::mcp::Server>) -> Result<(), crate::Error> {
+    async fn connect_to(
+        self,
+        client: impl ConnectTo<role::mcp::Server>,
+    ) -> Result<(), crate::Error> {
         // Create tokio byte streams that rmcp expects
         let (mcp_server_stream, mcp_client_stream) = tokio::io::duplex(8192);
         let (mcp_server_read, mcp_server_write) = tokio::io::split(mcp_server_stream);
@@ -375,8 +381,11 @@ impl<Counterpart: Role> ConnectTo<role::mcp::Client> for McpServerConnection<Cou
             // Connect byte_streams to the provided client
             let byte_streams =
                 ByteStreams::new(mcp_client_write.compat_write(), mcp_client_read.compat());
-            let _ =
-                <ByteStreams<_, _> as ConnectTo<role::mcp::Client>>::connect_to(byte_streams, client).await;
+            let _ = <ByteStreams<_, _> as ConnectTo<role::mcp::Client>>::connect_to(
+                byte_streams,
+                client,
+            )
+            .await;
             Ok(())
         };
 
@@ -427,7 +436,9 @@ impl<R: Role> ServerHandler for McpServerConnection<R> {
         // Execute the user's tool, unless cancellation occurs
         let has_structured_output = registered.has_structured_output;
         match futures::future::select(
-            registered.tool.call_tool(serde_value, self.mcp_connection.clone()),
+            registered
+                .tool
+                .call_tool(serde_value, self.mcp_connection.clone()),
             pin!(context.ct.cancelled()),
         )
         .await
@@ -572,7 +583,11 @@ where
         self.description.clone()
     }
 
-    async fn call_tool(&self, params: P, mcp_connection: McpConnectionTo<R>) -> Result<Ret, crate::Error> {
+    async fn call_tool(
+        &self,
+        params: P,
+        mcp_connection: McpConnectionTo<R>,
+    ) -> Result<Ret, crate::Error> {
         let (result_tx, result_rx) = oneshot::channel();
 
         self.call_tx
