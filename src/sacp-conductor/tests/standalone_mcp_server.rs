@@ -5,7 +5,7 @@
 
 use rmcp::{ClientHandler, ServiceExt, model::ClientInfo};
 use sacp::{
-    ByteStreams, RunWithConnectionTo, ConnectTo, mcp_server::McpServer, role::mcp, util::run_until,
+    ByteStreams, ConnectTo, RunWithConnectionTo, mcp_server::McpServer, role::mcp, util::run_until,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};

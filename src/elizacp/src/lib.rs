@@ -9,7 +9,7 @@ use sacp::schema::{
     PromptRequest, PromptResponse, SessionId, SessionNotification, SessionUpdate, StopReason,
     TextContent,
 };
-use sacp::{Agent, Client, ConnectionTo, Responder, ConnectTo};
+use sacp::{Agent, Client, ConnectTo, ConnectionTo, Responder};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
@@ -368,7 +368,8 @@ fn parse_tool_call(input: &str) -> Option<(String, String, String)> {
 
 impl ConnectTo<Client> for ElizaAgent {
     async fn connect_to(self, client: impl ConnectTo<Agent>) -> Result<(), sacp::Error> {
-        Agent.builder()
+        Agent
+            .builder()
             .name("elizacp")
             .on_receive_request(
                 async |initialize: InitializeRequest, responder, _cx| {
